@@ -46,7 +46,7 @@
   )
 
   (setup
-    (last_trace_width 0.7)
+    (last_trace_width 0.25)
     (user_trace_width 0.2)
     (user_trace_width 0.25)
     (user_trace_width 0.3)
@@ -6337,7 +6337,7 @@
   )
 
   (module kicad-libraries:WEEE_7mm (layer B.Cu) (tedit 0) (tstamp 589F1A2B)
-    (at 138.7 94.15)
+    (at 137 100.75)
     (fp_text reference G*** (at 0 0) (layer B.SilkS) hide
       (effects (font (thickness 0.3)) (justify mirror))
     )
@@ -6462,7 +6462,7 @@
   )
 
   (module kicad-libraries:CE_5mm (layer B.Cu) (tedit 0) (tstamp 589F5536)
-    (at 132.8 94.25 180)
+    (at 137 94.05 180)
     (fp_text reference VAL (at 0 0 180) (layer B.SilkS) hide
       (effects (font (size 1.143 1.143) (thickness 0.1778)) (justify mirror))
     )
