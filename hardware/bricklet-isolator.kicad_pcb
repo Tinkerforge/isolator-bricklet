@@ -3,7 +3,7 @@
   (general
     (links 72)
     (no_connects 1)
-    (area 116.923 81.674999 157.077 111.827)
+    (area 116.094999 80.844999 157.905001 112.655001)
     (thickness 1.6)
     (drawings 12)
     (tracks 269)
@@ -7223,7 +7223,7 @@
     (fill yes (arc_segments 16) (thermal_gap 0.25) (thermal_bridge_width 0.25))
     (polygon
       (pts
-        (xy 117 81.8) (xy 135.9 81.8) (xy 135.9 111.6) (xy 117 111.6) (xy 117 81.9)
+        (xy 117 81.75) (xy 135.9 81.75) (xy 135.9 111.75) (xy 117 111.75) (xy 117 81.9)
       )
     )
     (filled_polygon
@@ -7256,7 +7256,7 @@
     (fill yes (arc_segments 16) (thermal_gap 0.25) (thermal_bridge_width 0.25))
     (polygon
       (pts
-        (xy 156.9 111.6) (xy 138 111.6) (xy 138 81.8) (xy 156.9 81.8) (xy 156.9 111.6)
+        (xy 157 111.75) (xy 138 111.75) (xy 138 81.75) (xy 157 81.75)
       )
     )
     (filled_polygon
