@@ -1,4 +1,4 @@
-update=Fr 10 Feb 2017 17:17:48 CET
+update=Mo 08 Mai 2017 10:13:21 CEST
 version=1
 last_client=kicad
 [pcbnew]
@@ -23,11 +23,23 @@ ModuleOutlineThickness=0.150000000000
 [cvpcb]
 version=1
 NetIExt=net
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60
+[general]
+version=1
 [eeschema]
 version=1
-LibDir=kicad-libraries
+LibDir=kicad-libraries.pretty
 [eeschema/libraries]
-LibName1=kicad-libraries/tinkerforge
+LibName1=kicad-libraries.pretty/tinkerforge
 LibName2=power
 LibName3=device
 LibName4=transistors
@@ -57,15 +69,3 @@ LibName27=opto
 LibName28=atmel
 LibName29=contrib
 LibName30=valves
-[schematic_editor]
-version=1
-PageLayoutDescrFile=
-PlotDirectoryName=
-SubpartIdSeparator=0
-SubpartFirstId=65
-NetFmtName=
-SpiceForceRefPrefix=0
-SpiceUseNetNumbers=0
-LabSize=60
-[general]
-version=1
