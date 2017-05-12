@@ -1,9 +1,9 @@
-(kicad_pcb (version 4) (host pcbnew 4.0.2+e4-6225~38~ubuntu15.10.1-stable)
+(kicad_pcb (version 4) (host pcbnew 4.0.2+dfsg1-stable)
 
   (general
     (links 72)
     (no_connects 1)
-    (area 116.094999 80.844999 157.905001 112.655001)
+    (area 116.923 81.674999 157.077 111.827)
     (thickness 1.6)
     (drawings 13)
     (tracks 269)
@@ -190,11 +190,11 @@
   )
 
   (module kicad-libraries:CE_5mm (layer B.Cu) (tedit 0) (tstamp 589F5536)
-    (at 137 94.05 180)
-    (fp_text reference VAL (at 0 0 180) (layer B.SilkS) hide
+    (at 137 94.45)
+    (fp_text reference VAL (at 0 0) (layer B.SilkS) hide
       (effects (font (size 1.143 1.143) (thickness 0.1778)) (justify mirror))
     )
-    (fp_text value CE_5mm (at 0 0 180) (layer B.SilkS) hide
+    (fp_text value CE_5mm (at 0 0) (layer B.SilkS) hide
       (effects (font (size 1.143 1.143) (thickness 0.1778)) (justify mirror))
     )
     (fp_poly (pts (xy -0.55372 -1.67132) (xy -0.5715 -1.67386) (xy -0.57912 -1.6764) (xy -0.59436 -1.6764)
