@@ -1,4 +1,4 @@
-update=Mo 11 Dez 2017 12:10:39 CET
+update=Mo 11 Dez 2017 17:05:55 CET
 version=1
 last_client=kicad
 [pcbnew]
@@ -37,7 +37,7 @@ LabSize=60
 version=1
 [eeschema]
 version=1
-LibDir=kicad-libraries
+LibDir=kicad-libraries.pretty
 [eeschema/libraries]
 LibName1=tinkerforge
 LibName2=power

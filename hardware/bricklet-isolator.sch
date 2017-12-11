@@ -974,34 +974,34 @@ $EndComp
 $Comp
 L R R3
 U 1 1 5A2FAAFC
-P 2900 3400
-F 0 "R3" V 2980 3400 50  0000 C CNN
-F 1 "1k" V 2900 3400 50  0000 C CNN
-F 2 "kicad-libraries:R0603F" H 2900 3400 60  0001 C CNN
-F 3 "" H 2900 3400 60  0000 C CNN
-	1    2900 3400
+P 3050 2200
+F 0 "R3" V 3130 2200 50  0000 C CNN
+F 1 "1k" V 3050 2200 50  0000 C CNN
+F 2 "kicad-libraries:R0603F" H 3050 2200 60  0001 C CNN
+F 3 "" H 3050 2200 60  0000 C CNN
+	1    3050 2200
 	0    1    1    0   
 $EndComp
 $Comp
 L LED D2
 U 1 1 5A2FAC85
-P 2400 3400
-F 0 "D2" H 2400 3500 50  0000 C CNN
-F 1 "blue" H 2400 3300 50  0000 C CNN
-F 2 "kicad-libraries:D0603E" H 2400 3400 50  0001 C CNN
-F 3 "" H 2400 3400 50  0000 C CNN
-	1    2400 3400
+P 2550 2200
+F 0 "D2" H 2550 2300 50  0000 C CNN
+F 1 "blue" H 2550 2100 50  0000 C CNN
+F 2 "kicad-libraries:D0603E" H 2550 2200 50  0001 C CNN
+F 3 "" H 2550 2200 50  0000 C CNN
+	1    2550 2200
 	1    0    0    -1  
 $EndComp
 $Comp
 L 3V3 #PWR030
 U 1 1 5A2FBA6A
-P 2150 2950
-F 0 "#PWR030" H 2150 3050 40  0001 C CNN
-F 1 "3V3" H 2150 3075 40  0000 C CNN
-F 2 "" H 2150 2950 60  0000 C CNN
-F 3 "" H 2150 2950 60  0000 C CNN
-	1    2150 2950
+P 2300 2200
+F 0 "#PWR030" H 2300 2300 40  0001 C CNN
+F 1 "3V3" H 2300 2325 40  0000 C CNN
+F 2 "" H 2300 2200 60  0000 C CNN
+F 3 "" H 2300 2200 60  0000 C CNN
+	1    2300 2200
 	1    0    0    -1  
 $EndComp
 NoConn ~ 3400 4900
@@ -1025,7 +1025,6 @@ Wire Wire Line
 Wire Notes Line
 	7200 550  7200 6400
 NoConn ~ 3400 2100
-NoConn ~ 3400 2200
 NoConn ~ 3400 2300
 NoConn ~ 3400 2400
 $Comp
@@ -1130,13 +1129,13 @@ Wire Wire Line
 	2050 1750 2200 1750
 Wire Wire Line
 	2200 1850 2050 1850
-Text GLabel 3300 3300 0    39   Input ~ 0
+Text GLabel 3300 3500 0    39   Input ~ 0
 S-CS
-Text GLabel 3300 3200 0    39   Input ~ 0
+Text GLabel 3300 3600 0    39   Input ~ 0
 S-CLK
-Text GLabel 3300 3000 0    39   Input ~ 0
+Text GLabel 3300 3700 0    39   Input ~ 0
 S-MOSI
-Text GLabel 3300 3100 0    39   Output ~ 0
+Text GLabel 3300 4200 0    39   Output ~ 0
 S-MISO
 Wire Wire Line
 	3300 3000 3400 3000
@@ -1148,13 +1147,13 @@ Wire Wire Line
 	3400 3300 3300 3300
 NoConn ~ 3400 2900
 NoConn ~ 3400 4800
-Text GLabel 3300 3500 0    39   Output ~ 0
+Text GLabel 3300 3300 0    39   Output ~ 0
 M-CS
-Text GLabel 3300 3600 0    39   Output ~ 0
+Text GLabel 3300 3200 0    39   Output ~ 0
 M-CLK
-Text GLabel 3300 4200 0    39   Output ~ 0
+Text GLabel 3300 3100 0    39   Output ~ 0
 M-MOSI
-Text GLabel 3300 3700 0    39   Input ~ 0
+Text GLabel 3300 3000 0    39   Input ~ 0
 M-MISO
 Text GLabel 5850 3300 0    39   Input ~ 0
 M-CS
@@ -1178,9 +1177,13 @@ Wire Wire Line
 Wire Wire Line
 	3400 3400 3150 3400
 Wire Wire Line
-	2650 3400 2600 3400
+	2800 2200 2750 2200
 Wire Wire Line
-	2200 3400 2150 3400
+	2350 2200 2300 2200
+Text Notes 4500 4800 0    60   ~ 0
+SPI Master\nP0.6 : CH1-DX0 : MISO\nP0.7 : CH1-DOUT : MOSI\nP0.8 : CH1-SCLKOUT : CLK\nP0.9 : CH1-SELO0 : SEL
+Text Notes 4500 5450 0    60   ~ 0
+SPI Slave/CH0\nP0.13 : USIC0_CH0-DX2F : SEL\nP0.14 : USIC0_CH0-DX1A : CLK\nP0.15 : USIC0_CH0-DX0B : MOSI\nP2.0 : USIC0_CH0-DOUT0 : MISO
 Wire Wire Line
-	2150 3400 2150 2950
+	3300 2200 3400 2200
 $EndSCHEMATC
