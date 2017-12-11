@@ -1,4 +1,4 @@
-update=Mo 08 Mai 2017 10:13:21 CEST
+update=Mo 11 Dez 2017 12:10:39 CET
 version=1
 last_client=kicad
 [pcbnew]
@@ -37,9 +37,9 @@ LabSize=60
 version=1
 [eeschema]
 version=1
-LibDir=kicad-libraries.pretty
+LibDir=kicad-libraries
 [eeschema/libraries]
-LibName1=kicad-libraries.pretty/tinkerforge
+LibName1=tinkerforge
 LibName2=power
 LibName3=device
 LibName4=transistors
