@@ -59,6 +59,7 @@ void communication_init(void);
 
 // Function prototypes
 
+bool communication_handle_message_from_bricklet(uint8_t *message, const uint8_t length);
 
 // Callbacks
 
@@ -66,6 +67,5 @@ void communication_init(void);
 #define COMMUNICATION_CALLBACK_TICK_WAIT_MS 1
 #define COMMUNICATION_CALLBACK_HANDLER_NUM 0
 #define COMMUNICATION_CALLBACK_LIST_INIT \
-
 
 #endif
