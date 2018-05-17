@@ -234,8 +234,8 @@ void spitfp_master_send_ack_and_message(uint8_t *data, const uint8_t length) {
 
 	spitfp_master.buffer_send[length + SPITFP_PROTOCOL_OVERHEAD-1] = checksum;
 
-	spitfp_master_trigger_send();
 	spitfp_master.last_send_started = system_timer_get_ms();
+	spitfp_master_trigger_send();
 }
 
 void spitfp_master_send_ack(void) {
@@ -252,8 +252,8 @@ void spitfp_master_send_ack(void) {
 
 	spitfp_master.buffer_send_length = SPITFP_PROTOCOL_OVERHEAD;
 
-	spitfp_master_trigger_send();
 	spitfp_master.last_send_started = system_timer_get_ms();
+	spitfp_master_trigger_send();
 }
 
 bool spitfp_master_is_send_possible(void) {
@@ -285,8 +285,8 @@ void spitfp_master_check_message_send_timeout(void) {
 	
 		spitfp_master.buffer_send_index = 0;
 		spitfp_master.ack_to_send = false;
-		spitfp_master_trigger_send();
 		spitfp_master.last_send_started = system_timer_get_ms();
+		spitfp_master_trigger_send();
 	}
 }
 
