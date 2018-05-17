@@ -202,7 +202,7 @@ void spitfp_master_init(void) {
 void spitfp_master_trigger_send(void) {
 	// We turn tx IRQ off while we call the handler by hand, to be 100% sure that we can't
 	// get the interrupt while in the interrupt
-	XMC_USIC_CH_RXFIFO_EnableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
+	XMC_USIC_CH_TXFIFO_DisableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
 	spitfp_master_tx_irq_handler();
 	XMC_USIC_CH_TXFIFO_EnableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
 }
