@@ -65,9 +65,9 @@
 #define SPITFP_SERVICE_REQUEST_TX   1
 
 #define SPITFP_IRQ_RX               9
-#define SPITFP_IRQ_RX_PRIORITY      2
+#define SPITFP_IRQ_RX_PRIORITY      0
 #define SPITFP_IRQ_TX               10
-#define SPITFP_IRQ_TX_PRIORITY      3
+#define SPITFP_IRQ_TX_PRIORITY      1
 
 #define SPITFP_TX_DATA_POINTER      16
 #define SPITFP_TX_SIZE              XMC_USIC_CH_FIFO_SIZE_16WORDS
