@@ -28,6 +28,7 @@
 #include "bricklib2/logging/logging.h"
 
 #include "bricklib2/utility/pearson_hash.h"
+#include "bricklib2/utility/util_definitions.h"
 #include "bricklib2/hal/system_timer/system_timer.h"
 #include "bricklib2/protocols/spitfp/spitfp.h"
 
@@ -36,10 +37,11 @@
 
 SPITFPMaster spitfp_master;
 
+// This interrupt is automtically called if the TX buffer goes from 9 bytes to 8 bytes.
+// It is also called directly from the code everytime when data has to be send.
 void __attribute__((optimize("-O3"))) __attribute__((section (".ram_code"))) spitfp_master_tx_irq_handler(void) {
 	while(!XMC_USIC_CH_TXFIFO_IsFull(SPITFP_MASTER_USIC)) {
 		if(spitfp_master.buffer_send_index < spitfp_master.buffer_send_length) {
-			spitfp_master.counter_send++;
 			SPITFP_MASTER_USIC->IN[0] = spitfp_master.buffer_send[spitfp_master.buffer_send_index];
 
 			spitfp_master.buffer_send_index++;
@@ -52,54 +54,36 @@ void __attribute__((optimize("-O3"))) __attribute__((section (".ram_code"))) spi
 				}
 			}
 		} else {
-			spitfp_master.counter_send++;
-			SPITFP_MASTER_USIC->IN[0] = 0;
-
-			if(spitfp_master.zero_count_recv >= 2) {
-				spitfp_master.zero_count_recv = 0;
-				XMC_USIC_CH_TXFIFO_DisableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
-				XMC_USIC_CH_TXFIFO_ClearEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
+			// If we don't have any data to send, will will send zeroes to poll the slave.
+			// The amount of zeroes to be send is set by the state machine.
+			if(spitfp_master.bytes_to_read > 0) {
+				spitfp_master.bytes_to_read--;
+				SPITFP_MASTER_USIC->IN[0] = 0;
+			} else {
+				return;
 			}
 		}
 	}
 }
 
 void __attribute__((optimize("-O3"))) __attribute__((section (".ram_code"))) spitfp_master_rx_irq_handler(void) {
-	while(!XMC_USIC_CH_RXFIFO_IsEmpty(SPITFP_MASTER_USIC)) {
-		const uint8_t data = SPITFP_MASTER_USIC->OUTR;
-		ringbuffer_add(&spitfp_master.ringbuffer_recv, data);
-		if(data == 0) {
-			spitfp_master.zero_count_recv++;
-		} else {
-			spitfp_master.zero_count_recv = 0;
-		}
-
-		spitfp_master.counter_recv++;
-		if(spitfp_master.counter_recv >= spitfp_master.counter_send) {
-			spitfp_master.counter_send = 0;
-			spitfp_master.counter_recv = 0;
-
-			XMC_SPI_CH_DisableSlaveSelect(SPITFP_MASTER_USIC);
-		}
-	}
-
-	/*
-	while(!XMC_USIC_CH_RXFIFO_IsEmpty(SPITFP_MASTER_USIC)) {
-		ringbuffer_recv_buffer[ringbuffer_recv->end] = SPITFP_MASTER_USIC->OUTR;
-		ringbuffer_recv->end = (ringbuffer_recv->end + 1) & SPITFP_RECEIVE_BUFFER_MASK;
-
-		// Without this "if" the interrupt takes 1.39us, including the "if" it takes 1.75us
-		// Without the "if" it still works, but we loose the overflow counter,
-		// we will get frame/checksum errors instead
-#ifndef BOOTLOADER_XMC_RX_IRQ_NO_OVERFLOW
-		// Tell GCC that this branch is unlikely to occur => __builtin_expect(value, 0)
-		if(__builtin_expect((ringbuffer_recv->end == ringbuffer_recv->start), 0)) {
-			bootloader_status.error_count.error_count_overflow++;
-			ringbuffer_recv->end = (ringbuffer_recv->end - 1) & SPITFP_RECEIVE_BUFFER_MASK;
-		}
-#endif
-
-	}*/
+	// If this interrupt is called we always have at least 8 bytes available.
+	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
+	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
+	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
+	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
+	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
+	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
+	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
+	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
+	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
+	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
+	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
+	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
+	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
+	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
+	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
+	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
 }
 
 
@@ -157,6 +141,8 @@ void spitfp_master_init_spi(void) {
 	// Configure Leading/Trailing delay
 	XMC_SPI_CH_SetSlaveSelectDelay(SPITFP_MASTER_USIC, 2);
 
+	// Disable Frame End Mode. This means that a slave select gets automatically deasserted if the last
+	// bit has been shifted out of the out register.
 
 	// Set input source path
 	XMC_SPI_CH_SetInputSource(SPITFP_MASTER_USIC, SPITFP_MASTER_MISO_INPUT, SPITFP_MASTER_MISO_SOURCE);
@@ -198,26 +184,27 @@ void spitfp_master_init_spi(void) {
 	//Configure MOSI pin
 	XMC_GPIO_Init(SPITFP_MASTER_MOSI_PIN, &mosi_pin_config);
 
-	XMC_USIC_CH_RXFIFO_EnableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_RXFIFO_EVENT_CONF_STANDARD | XMC_USIC_CH_RXFIFO_EVENT_CONF_ALTERNATE);
 
-	XMC_SPI_CH_EnableSlaveSelect(SPITFP_MASTER_USIC, XMC_SPI_CH_SLAVE_SELECT_0);
+	XMC_USIC_CH_RXFIFO_EnableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_RXFIFO_EVENT_CONF_STANDARD | XMC_USIC_CH_RXFIFO_EVENT_CONF_ALTERNATE);
 	XMC_USIC_CH_TXFIFO_EnableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
-	XMC_USIC_CH_TriggerServiceRequest(SPITFP_MASTER_USIC, SPITFP_MASTER_SERVICE_REQUEST_TX);
+
+	XMC_SPI_CH_DisableFEM(SPITFP_MASTER_USIC);
+	XMC_SPI_CH_EnableSlaveSelect(SPITFP_MASTER_USIC, XMC_SPI_CH_SLAVE_SELECT_0);
 }
 
 void spitfp_master_init(void) {
-//	uartbb_printf("spitfp_master_init start\n\r");
 	memset(&spitfp_master, 0, sizeof(SPITFPMaster));
 	ringbuffer_init(&spitfp_master.ringbuffer_recv, SPITFP_MASTER_BUFFER_LENGTH, spitfp_master.buffer_recv);
 
     spitfp_master_init_spi();
-//	uartbb_printf("spitfp_master_init end\n\r");
 }
 
 void spitfp_master_trigger_send(void) {
-	XMC_SPI_CH_EnableSlaveSelect(SPITFP_MASTER_USIC, XMC_SPI_CH_SLAVE_SELECT_0);
+	// We turn tx IRQ off while we call the handler by hand, to be 100% sure that we can't
+	// get the interrupt while in the interrupt
+	XMC_USIC_CH_RXFIFO_EnableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
+	spitfp_master_tx_irq_handler();
 	XMC_USIC_CH_TXFIFO_EnableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
-	XMC_USIC_CH_TriggerServiceRequest(SPITFP_MASTER_USIC, SPITFP_MASTER_SERVICE_REQUEST_TX);
 }
 
 uint8_t spitfp_master_get_sequence_byte(const bool increase) {
@@ -228,13 +215,10 @@ uint8_t spitfp_master_get_sequence_byte(const bool increase) {
 		}
 	}
 
-//	uartbb_printf("get seq byte: %d -> %d\n\r", increase, spitfp_master.current_sequence_number);
-
 	return spitfp_master.current_sequence_number | (spitfp_master.last_sequence_number_seen << 4);
 }
 
 void spitfp_master_send_ack_and_message(uint8_t *data, const uint8_t length) {
-//	uartbb_printf("send ack and message: %d\n\r", length);
 	uint8_t checksum = 0;
 	spitfp_master.buffer_send_length = length + SPITFP_PROTOCOL_OVERHEAD;
 	spitfp_master.buffer_send[0] = spitfp_master.buffer_send_length;
@@ -255,7 +239,6 @@ void spitfp_master_send_ack_and_message(uint8_t *data, const uint8_t length) {
 }
 
 void spitfp_master_send_ack(void) {
-//	uartbb_printf("ack: %d\n\r", spitfp_master.buffer_message_from_brick_length);
 	if(spitfp_master.buffer_message_from_brick_length > 0) {
 		spitfp_master_send_ack_and_message(spitfp_master.buffer_message_from_brick, spitfp_master.buffer_message_from_brick_length);
 		spitfp_master.buffer_message_from_brick_length = 0;
@@ -274,7 +257,7 @@ void spitfp_master_send_ack(void) {
 }
 
 bool spitfp_master_is_send_possible(void) {
-	 return spitfp_master.buffer_send_length == 0 && ((SPITFP_MASTER_USIC->PCR_SSCMode & USIC_CH_PCR_SSCMode_SELO_Msk) == 0);
+	 return spitfp_master.buffer_send_length == 0;
 }
 
 void spitfp_master_check_message_send_timeout(void) {
@@ -282,11 +265,26 @@ void spitfp_master_check_message_send_timeout(void) {
 	// and there is still data in the buffer 
 	// and the timeout ran out we resend the message
 	if((spitfp_master.buffer_send_length > SPITFP_PROTOCOL_OVERHEAD) && 
-       ((SPITFP_MASTER_USIC->PCR_SSCMode & USIC_CH_PCR_SSCMode_SELO_Msk) == 0) && 
-	   system_timer_is_time_elapsed_ms(spitfp_master.last_send_started, /*SPITFP_TIMEOUT*/ 250)) {
-		uartbb_printf("resend\n\r");
+	   (spitfp_master.buffer_send_length == spitfp_master.buffer_send_index) && 
+	   (system_timer_is_time_elapsed_ms(spitfp_master.last_send_started, SPITFP_TIMEOUT) || spitfp_master.ack_to_send)) {
 
+		// Update sequence number of send buffer. We don't increase the current sequence
+		// number, but if we have seen a new message from the master we insert
+		// the updated "last seen sequence number".
+		// If the number changed we also have to update the checksum.
+		uint8_t new_sequence_byte = spitfp_master_get_sequence_byte(false);
+		if(new_sequence_byte != spitfp_master.buffer_send[1]) {
+			spitfp_master.buffer_send[1] = new_sequence_byte;
+			uint8_t checksum = 0;
+			for(uint8_t i = 0; i < spitfp_master.buffer_send[0]-1; i++) {
+				PEARSON(checksum, spitfp_master.buffer_send[i]);
+			}
+
+			spitfp_master.buffer_send[spitfp_master.buffer_send[0]-1] = checksum;
+		}
+	
 		spitfp_master.buffer_send_index = 0;
+		spitfp_master.ack_to_send = false;
 		spitfp_master_trigger_send();
 		spitfp_master.last_send_started = system_timer_get_ms();
 	}
@@ -298,24 +296,27 @@ void spitfp_master_handle_protocol_error(void) {
 	while(ringbuffer_get(&spitfp_master.ringbuffer_recv, &data));
 }
 
-void spitfp_master_check(void) {
+void spitfp_master_check_message(void) {
 	// If the temporary buffer length is > 0 we still have a message to handle
 	if(spitfp_master.buffer_recv_tmp_length > 0) {
-		if(spitfp_master.buffer_send_length == 0 /*spitfp_master_is_send_possible()*/) {
-			if(spitfp_master.buffer_recv_tmp_length == SPITFP_PROTOCOL_OVERHEAD) {
-				// If the length is set to SPITFP_PROTOCOL_OVERHEAD we just have to answer with an ACK
+		// Try to send message to Bricklet
+		if(communication_handle_message_from_bricklet(spitfp_master.buffer_recv_tmp, spitfp_master.buffer_recv_tmp_length)) {
+			spitfp_master.buffer_recv_tmp_length = 0;
+
+			// If we were able to send message to Bricklet, try to send ACK
+			if(spitfp_master_is_send_possible()) {
 				spitfp_master_send_ack();
-				spitfp_master.buffer_recv_tmp_length = 0;
 			} else {
-				 if(communication_handle_message_from_bricklet(spitfp_master.buffer_recv_tmp, spitfp_master.buffer_recv_tmp_length)) {
-					spitfp_master.buffer_recv_tmp_length = 0;
-				 }
+				// If we can't send the ack we set a flag here and the ACK is send later on.
+				// If we aren't fast enough the slave may send us a duplicate of the message,
+				// but the duplicate will be thrown away since the sequence number will not
+				// be incresead in the meantime.
+				spitfp_master.ack_to_send = true;
 			}
-		} else {
-			uartbb_printf("send not possible: %d %d\n\r", spitfp_master.buffer_send_length, spitfp_master.buffer_send_index);
 		}
 	}
 
+	// Check if we didn't receive an ACK within the timeout time and resend the message if necessary.
 	spitfp_master_check_message_send_timeout();
 
 	uint8_t message[TFP_MESSAGE_MAX_LENGTH] = {0};
@@ -360,7 +361,6 @@ void spitfp_master_check(void) {
 					// If the length is not PROTOCOL_OVERHEAD or within [MIN_TFP_MESSAGE_LENGTH, MAX_TFP_MESSAGE_LENGTH]
 					// or 0, something has gone wrong!
 //					bootloader_status->error_count.error_count_frame++; // TODO
-					loge("Error 1\n\r");
 					spitfp_master_handle_protocol_error();
 					return;
 				}
@@ -391,16 +391,19 @@ void spitfp_master_check(void) {
 
 				if(checksum != data) {
 					//bootloader_status->error_count.error_count_ack_checksum++; // TODO
-					loge("Error 2\n\r");
 					spitfp_master_handle_protocol_error();
 					return;
 				}
 
 				uint8_t last_sequence_number_seen_by_slave = (data_sequence_number & 0xF0) >> 4;
-//				uartbb_printf("seq ack slave %d, cur %d\n\r", last_sequence_number_seen_by_slave, spitfp_master.current_sequence_number);
 				if(last_sequence_number_seen_by_slave == spitfp_master.current_sequence_number) {
-					spitfp_master.buffer_send_index = 0;
-					spitfp_master.buffer_send_length = 0;
+					// If we got a timeout and are now re-sending the message, it
+					// is possible that we are currently sending this message again.
+					// Check if it was send completely
+					if(spitfp_master.buffer_send_index == spitfp_master.buffer_send_length) {
+						spitfp_master.buffer_send_index = 0;
+						spitfp_master.buffer_send_length = 0;
+					}
 				}
 
 				break;
@@ -436,16 +439,19 @@ void spitfp_master_check(void) {
 
 				if(checksum != data) {
 					//bootloader_status->error_count.error_count_message_checksum++; // TODO
-					loge("Error 3\n\r");
 					spitfp_master_handle_protocol_error();
 					return;
 				}
 
 				uint8_t last_sequence_number_seen_by_slave = (data_sequence_number & 0xF0) >> 4;
-//				uartbb_printf("seq msg slave %d, cur %d -> tmp len %d\n\r", last_sequence_number_seen_by_slave, spitfp_master.current_sequence_number, spitfp_master.buffer_recv_tmp_length);
 				if(last_sequence_number_seen_by_slave == spitfp_master.current_sequence_number) {
-					spitfp_master.buffer_send_index = 0;
-					spitfp_master.buffer_send_length = 0;
+					// If we got a timeout and are now re-sending the message, it
+					// is possible that we are currently sending this message again.
+					// Check if it was send completely
+					if(spitfp_master.buffer_send_index == spitfp_master.buffer_send_length) {
+						spitfp_master.buffer_send_index = 0;
+						spitfp_master.buffer_send_length = 0;
+					}
 				}
 
 				// If we already have one recv message in the temporary buffer,
@@ -466,8 +472,12 @@ void spitfp_master_check(void) {
 						// if it can handle the message at the current moment.
 						// Otherwise it will save the message and length for it it be send
 						// later on.
-						if(spitfp_master_is_send_possible() && communication_handle_message_from_bricklet(message, message_position)) {
-							spitfp_master_send_ack();
+						if(communication_handle_message_from_bricklet(message, message_position)) {
+							if(spitfp_master_is_send_possible()) {
+								spitfp_master_send_ack();
+							} else {
+								spitfp_master.ack_to_send = true;
+							}
 						} else {
 							spitfp_master.buffer_recv_tmp_length = message_position;
 							memcpy(spitfp_master.buffer_recv_tmp, message, message_position);
@@ -476,9 +486,7 @@ void spitfp_master_check(void) {
 						if(spitfp_master_is_send_possible()) {
 							spitfp_master_send_ack();
 						} else {
-							// If we want to send an ACK but currently can't, we set the
-							// temporary recv buffer length to SPITFP_PROTOCOL_OVERHEAD.
-							spitfp_master.buffer_recv_tmp_length = SPITFP_PROTOCOL_OVERHEAD;
+							spitfp_master.ack_to_send = true;
 						}
 					}
 				}
@@ -488,22 +496,67 @@ void spitfp_master_check(void) {
 	}
 }
 
+uint16_t spitfp_master_check_missing_length() {
+	// Peak into the buffer to get the message length.
+	// Only call this before or after bricklet_co_mcu_check_recv.
+	Ringbuffer *rb = &spitfp_master.ringbuffer_recv;
+	while(rb->start != rb->end) {
+		uint8_t length = rb->buffer[rb->start];
+		if((length < SPITFP_MIN_TFP_MESSAGE_LENGTH || length > SPITFP_MAX_TFP_MESSAGE_LENGTH) && length != SPITFP_PROTOCOL_OVERHEAD) {
+			ringbuffer_remove(rb, 1);
+			continue;
+		}
+
+		int32_t ret = length - ringbuffer_get_used(rb);
+		if((ret < 0) || (ret > TFP_MESSAGE_MAX_LENGTH)) {
+			return 0;
+		}
+
+		return ret;
+	}
+
+	return 0;
+}
+
+void spitfp_master_poll_spi_recv_fifo(void) {
+	// Turn the RX fifo interrupt off, to be sure that we can't get an interrupt while we are polling here
+	XMC_USIC_CH_RXFIFO_DisableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_RXFIFO_EVENT_CONF_STANDARD | XMC_USIC_CH_RXFIFO_EVENT_CONF_ALTERNATE);
+	while(!XMC_USIC_CH_RXFIFO_IsEmpty(SPITFP_MASTER_USIC)) {
+		spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
+		spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
+	}
+	XMC_USIC_CH_RXFIFO_EnableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_RXFIFO_EVENT_CONF_STANDARD | XMC_USIC_CH_RXFIFO_EVENT_CONF_ALTERNATE);
+}
+
 void spitfp_master_tick(void) {
+	spitfp_master_trigger_send();
+
+	spitfp_master_poll_spi_recv_fifo();
+	spitfp_master_check_message();
+
+	spitfp_master_poll_spi_recv_fifo();
+	const uint16_t missing_length = spitfp_master_check_missing_length();
+	spitfp_master.bytes_to_read = MAX(missing_length, spitfp_master.bytes_to_read);
+
 	if(spitfp_master_is_send_possible()) {
 		// If there is a message to be send from Brick to Bricklet we can send it now.
 		if(spitfp_master.buffer_message_from_brick_length > 0) {
-//			uartbb_printf("spitfp_master_tick send\n\r");
 			spitfp_master_send_ack_and_message(spitfp_master.buffer_message_from_brick, spitfp_master.buffer_message_from_brick_length);
 			spitfp_master.buffer_message_from_brick_length = 0;
-		// Otherwise we will just send zeros here
-		} else {
-			spitfp_master_trigger_send();
-		}
-	} else if((SPITFP_MASTER_USIC->PCR_SSCMode & USIC_CH_PCR_SSCMode_SELO_Msk) == 0) {
-		if(system_timer_is_time_elapsed_ms(spitfp_master.last_send_started, 1)) {
-			spitfp_master_trigger_send();
+			return;
+		// If there is an ack to be send, we can send it now.
+		} else if(spitfp_master.ack_to_send) {
+			spitfp_master_send_ack();
+			spitfp_master.ack_to_send = false;
+			return;
 		}
 	}
 
-	spitfp_master_check();
+	// If we can't send data or ack (see above) and the last time we polled the slave
+	// was over 1ms ago, we poll again.
+	if(system_timer_is_time_elapsed_ms(spitfp_master.last_poll, 1) || (spitfp_master.bytes_to_read > 0)) {
+		spitfp_master.last_poll = system_timer_get_ms();
+		spitfp_master.bytes_to_read = MAX(1, spitfp_master.bytes_to_read);
+		spitfp_master_trigger_send();
+	}
 }

@@ -52,8 +52,11 @@ typedef struct {
 	uint8_t current_sequence_number;
 	uint8_t last_sequence_number_seen;
 	uint32_t last_send_started;
+	uint32_t last_poll;
+	uint32_t bytes_to_read;
+	bool ack_to_send;
 
-    Ringbuffer ringbuffer_recv;
+	Ringbuffer ringbuffer_recv;
 } SPITFPMaster;
 
 extern SPITFPMaster spitfp_master;
