@@ -33,7 +33,6 @@ void communication_inspect_message_from_bricklet_to_brick(void *message) {
 
 	char uid[9] = {'\0'};
 	tfp_uid_uint32_to_base58(tfp_get_uid_from_message(message), uid);
-	uartbb_printf("message from bricklet: fid %d, uid %s, len %d\n\r", tfp_get_fid_from_message(message), uid, tfp_get_length_from_message(message));
 
 	switch(fid) {
 		case TFP_FID_ENUMERATE_CALLBACK:
@@ -53,24 +52,20 @@ BootloaderHandleMessageResponse handle_message(const void *message, void *respon
 	const uint32_t message_uid = tfp_get_uid_from_message(message);
 	// If message is for isolator we handle it here
 	if(message_uid == bootloader_get_uid()) {
-		uartbb_printf("message for isolator: fid %d\n\r", tfp_get_fid_from_message(message));
 		switch(tfp_get_fid_from_message(message)) {
 
 			default: return HANDLE_MESSAGE_RESPONSE_NOT_SUPPORTED;
 		}
 	}
 	
-	uartbb_printf("message for bricklet: fid %d\n\r", tfp_get_fid_from_message(message));
 	// If there is space for a new message from the Brick we store it
 	while(spitfp_master.buffer_message_from_brick_length != 0) {
 		spitfp_master_tick();
-		uartbb_printf("no space left\n\r");
 	}
 
 	const uint8_t length = tfp_get_length_from_message(message);
 	memcpy(spitfp_master.buffer_message_from_brick, message, length);
 	spitfp_master.buffer_message_from_brick_length = length;
-	uartbb_printf("mfb length %d\n\r", spitfp_master.buffer_message_from_brick_length);
 
 #if 0
 	// If there is data available to be send to bricklet we can send it here
