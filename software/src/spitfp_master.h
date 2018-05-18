@@ -30,17 +30,17 @@
 #define SPITFP_MASTER_BUFFER_MASK   (SPITFP_MASTER_BUFFER_LENGTH-1)
 
 typedef struct {
-    uint8_t buffer_recv[SPITFP_MASTER_BUFFER_LENGTH];
-    uint8_t buffer_send[TFP_MESSAGE_MAX_LENGTH + SPITFP_PROTOCOL_OVERHEAD*2]; // *2 for send message overhead and additional ACK
+	uint8_t buffer_recv[SPITFP_MASTER_BUFFER_LENGTH];
+	uint8_t buffer_send[TFP_MESSAGE_MAX_LENGTH + SPITFP_PROTOCOL_OVERHEAD*2]; // *2 for send message overhead and additional ACK
 
-    uint8_t buffer_message_from_brick[TFP_MESSAGE_MAX_LENGTH];
-    uint8_t buffer_message_from_brick_length;
+	uint8_t buffer_message_from_brick[TFP_MESSAGE_MAX_LENGTH];
+	uint8_t buffer_message_from_brick_length;
 
-    uint8_t buffer_message_from_bricklet[TFP_MESSAGE_MAX_LENGTH];
-    uint8_t buffer_message_from_bricklet_length;
+	uint8_t buffer_message_from_bricklet[TFP_MESSAGE_MAX_LENGTH];
+	uint8_t buffer_message_from_bricklet_length;
 
-    uint8_t buffer_send_length;
-    uint8_t buffer_send_index;
+	uint8_t buffer_send_length;
+	uint8_t buffer_send_index;
 
 	uint8_t buffer_recv_tmp[TFP_MESSAGE_MAX_LENGTH + SPITFP_PROTOCOL_OVERHEAD*2];
 	uint8_t buffer_recv_tmp_length;
@@ -53,6 +53,25 @@ typedef struct {
 	bool ack_to_send;
 
 	Ringbuffer ringbuffer_recv;
+
+	bool enable_dynamic_baudrate;
+	uint32_t minimum_dynamic_baudrate;
+
+	uint32_t messages_from_brick;
+	uint32_t messages_from_bricklet;
+	uint16_t connected_bricklet_device_identifier;
+	char connected_bricklet_uid[8];
+
+	uint32_t baudrate;
+	uint32_t baudrate_current;
+
+	uint32_t error_count_ack_checksum;
+	uint32_t error_count_message_checksum;
+	uint32_t error_count_frame;
+	uint32_t error_count_overflow;
+
+	uint32_t update_speed_time;
+	uint32_t data_counter;
 } SPITFPMaster;
 
 extern SPITFPMaster spitfp_master;

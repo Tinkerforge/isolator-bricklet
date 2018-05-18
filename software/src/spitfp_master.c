@@ -42,6 +42,7 @@ SPITFPMaster spitfp_master;
 void __attribute__((optimize("-O3"))) __attribute__((section (".ram_code"))) spitfp_master_tx_irq_handler(void) {
 	while(!XMC_USIC_CH_TXFIFO_IsFull(SPITFP_MASTER_USIC)) {
 		if(spitfp_master.buffer_send_index < spitfp_master.buffer_send_length) {
+			spitfp_master.data_counter++;
 			SPITFP_MASTER_USIC->IN[0] = spitfp_master.buffer_send[spitfp_master.buffer_send_index];
 
 			spitfp_master.buffer_send_index++;
@@ -58,6 +59,7 @@ void __attribute__((optimize("-O3"))) __attribute__((section (".ram_code"))) spi
 			// The amount of zeroes to be send is set by the state machine.
 			if(spitfp_master.bytes_to_read > 0) {
 				spitfp_master.bytes_to_read--;
+				spitfp_master.data_counter++;
 				SPITFP_MASTER_USIC->IN[0] = 0;
 			} else {
 				return;
@@ -96,7 +98,7 @@ void __attribute__((optimize("-O3"))) __attribute__((section (".ram_code"))) spi
 void spitfp_master_init_spi(void) {
 	// USIC channel configuration
 	const XMC_SPI_CH_CONFIG_t channel_config = {
-		.baudrate       = 1000000,
+		.baudrate       = 1400000,
 		.bus_mode       = XMC_SPI_CH_BUS_MODE_MASTER,
 		.selo_inversion = XMC_SPI_CH_SLAVE_SEL_INV_TO_MSLS,
 		.parity_mode    = XMC_USIC_CH_PARITY_MODE_NONE
@@ -201,6 +203,11 @@ void spitfp_master_init_spi(void) {
 void spitfp_master_init(void) {
 	memset(&spitfp_master, 0, sizeof(SPITFPMaster));
 	ringbuffer_init(&spitfp_master.ringbuffer_recv, SPITFP_MASTER_BUFFER_LENGTH, spitfp_master.buffer_recv);
+
+	spitfp_master.enable_dynamic_baudrate  = true;
+	spitfp_master.minimum_dynamic_baudrate = 400000;
+	spitfp_master.baudrate_current         = 1400000;
+	spitfp_master.baudrate                 = 1400000;
 
     spitfp_master_init_spi();
 }
@@ -366,7 +373,7 @@ void spitfp_master_check_message(void) {
 				} else {
 					// If the length is not PROTOCOL_OVERHEAD or within [MIN_TFP_MESSAGE_LENGTH, MAX_TFP_MESSAGE_LENGTH]
 					// or 0, something has gone wrong!
-//					bootloader_status->error_count.error_count_frame++; // TODO
+					spitfp_master.error_count_frame++;
 					spitfp_master_handle_protocol_error();
 					return;
 				}
@@ -396,7 +403,7 @@ void spitfp_master_check_message(void) {
 				num_to_remove_from_ringbuffer = 0;
 
 				if(checksum != data) {
-					//bootloader_status->error_count.error_count_ack_checksum++; // TODO
+					spitfp_master.error_count_ack_checksum++;
 					spitfp_master_handle_protocol_error();
 					return;
 				}
@@ -444,7 +451,7 @@ void spitfp_master_check_message(void) {
 				num_to_remove_from_ringbuffer = 0;
 
 				if(checksum != data) {
-					//bootloader_status->error_count.error_count_message_checksum++; // TODO
+					spitfp_master.error_count_message_checksum++;
 					spitfp_master_handle_protocol_error();
 					return;
 				}
@@ -509,6 +516,9 @@ uint16_t spitfp_master_check_missing_length() {
 	while(rb->start != rb->end) {
 		uint8_t length = rb->buffer[rb->start];
 		if((length < SPITFP_MIN_TFP_MESSAGE_LENGTH || length > SPITFP_MAX_TFP_MESSAGE_LENGTH) && length != SPITFP_PROTOCOL_OVERHEAD) {
+			if(length != 0) {
+				spitfp_master.error_count_frame++;
+			}
 			ringbuffer_remove(rb, 1);
 			continue;
 		}
@@ -534,7 +544,48 @@ void spitfp_master_poll_spi_recv_fifo(void) {
 	XMC_USIC_CH_RXFIFO_EnableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_RXFIFO_EVENT_CONF_STANDARD | XMC_USIC_CH_RXFIFO_EVENT_CONF_ALTERNATE);
 }
 
+void spitfp_master_update_baudrate(void) {
+	// TODO: This currently uses a max baudrate of 1400000.
+	//       It does not seem to work well with 2000000 baud. Why?
+	//       !!! Check this before we order for production !!!
+	if(system_timer_is_time_elapsed_ms(spitfp_master.update_speed_time, 100)) {
+		spitfp_master.update_speed_time = system_timer_get_ms();
+		const uint32_t counter = spitfp_master.data_counter;
+		spitfp_master.data_counter = 0;
+
+		if(spitfp_master.enable_dynamic_baudrate) {
+			uint32_t old_baudrate = spitfp_master.baudrate_current;
+
+			uint32_t new_baudrate = 0;
+
+			if(counter <= 800) {
+				new_baudrate = spitfp_master.minimum_dynamic_baudrate;
+			} else if(counter >= 2000) {
+				new_baudrate = 1400000;
+			} else {
+				new_baudrate = SCALE(counter, 800, 2000, spitfp_master.minimum_dynamic_baudrate, 1400000);
+			}
+
+			if(new_baudrate >= spitfp_master.baudrate_current) {
+				spitfp_master.baudrate_current = new_baudrate;
+			} else {
+				spitfp_master.baudrate_current -= 10000;
+				spitfp_master.baudrate_current = MAX(spitfp_master.baudrate_current, new_baudrate);
+			}
+
+			if(old_baudrate != spitfp_master.baudrate_current) {
+				uartbb_printf("%d\n\r", spitfp_master.baudrate_current);
+				XMC_USIC_CH_SetBaudrate(SPITFP_MASTER_USIC, spitfp_master.baudrate_current, 2);
+			}
+		} else {
+			spitfp_master.baudrate_current = 1400000;
+		}
+	}
+}
+
 void spitfp_master_tick(void) {
+	spitfp_master_update_baudrate();
+
 	spitfp_master_trigger_send();
 
 	spitfp_master_poll_spi_recv_fifo();
