@@ -84,6 +84,12 @@ void __attribute__((optimize("-O3"))) __attribute__((section (".ram_code"))) spi
 	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
 	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
 	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
+
+	// HINT: There is currently no check for recv ringbuffer overflow here
+	//       This means that spitfp_master.error_count_overflow will always stay at 0.
+	//       However, if there is an overflow one of the other errors will occur.
+	//       Additionally a check would make this function way less efficient and a
+	//       overflow is very unlikely to occur.
 }
 
 
