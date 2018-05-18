@@ -30,10 +30,6 @@
 #define SPITFP_MASTER_BUFFER_MASK   (SPITFP_MASTER_BUFFER_LENGTH-1)
 
 typedef struct {
-    uint32_t zero_count_recv;
-    uint32_t counter_send;
-    uint32_t counter_recv;
-
     uint8_t buffer_recv[SPITFP_MASTER_BUFFER_LENGTH];
     uint8_t buffer_send[TFP_MESSAGE_MAX_LENGTH + SPITFP_PROTOCOL_OVERHEAD*2]; // *2 for send message overhead and additional ACK
 
