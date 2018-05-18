@@ -50,7 +50,7 @@ void communication_inspect_message_from_bricklet_to_brick(void *message) {
 			tfp_uid_uint32_to_base58(bootloader_get_uid(), gir->connected_uid);
 
 			// Save UID and DID so user can get it through statistics API
-			memcpy(spitfp_master.connected_bricklet_uid, gir->connected_uid, TFP_UID_STR_MAX_LENGTH);
+			memcpy(spitfp_master.connected_bricklet_uid, gir->uid, TFP_UID_STR_MAX_LENGTH);
 			spitfp_master.connected_bricklet_device_identifier = gir->device_identifier;
 		}
 	}
