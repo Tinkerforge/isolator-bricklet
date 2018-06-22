@@ -69,23 +69,10 @@ void __attribute__((optimize("-O3"))) __attribute__((section (".ram_code"))) spi
 }
 
 void __attribute__((optimize("-O3"))) __attribute__((section (".ram_code"))) spitfp_master_rx_irq_handler(void) {
-	// If this interrupt is called we always have at least 8 bytes available.
-	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
-	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
-	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
-	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
-	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
-	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
-	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
-	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
-	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
-	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
-	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
-	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
-	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
-	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
-	spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
-	spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
+	while(!XMC_USIC_CH_RXFIFO_IsEmpty(SPITFP_MASTER_USIC)) {
+		spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
+		spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
+	}
 
 	// HINT: There is currently no check for recv ringbuffer overflow here
 	//       This means that spitfp_master.error_count_overflow will always stay at 0.
@@ -94,6 +81,23 @@ void __attribute__((optimize("-O3"))) __attribute__((section (".ram_code"))) spi
 	//       overflow is very unlikely to occur.
 }
 
+// Efficient implementation for baudrate between 400kHz and 2MHz.
+// This is not as precise as the XMCLib implementation, but it is
+// faster by a factor of 1000x (7us instead of 7ms!) and we don't 
+// need super precise frequencies here.
+void spitfp_master_set_baudrate(const uint32_t rate) {
+	uint16_t clock_divider = BETWEEN(203, SCALE(rate, 400000, 2000000, 203, 1023), 1023);
+
+	SPITFP_MASTER_USIC->FDR = XMC_USIC_CH_BRG_CLOCK_DIVIDER_MODE_FRACTIONAL |
+                   (clock_divider << USIC_CH_FDR_STEP_Pos);
+
+    SPITFP_MASTER_USIC->BRG = (SPITFP_MASTER_USIC->BRG & ~(USIC_CH_BRG_DCTQ_Msk |
+                                     USIC_CH_BRG_PDIV_Msk |
+                                     USIC_CH_BRG_PCTQ_Msk |
+                                     USIC_CH_BRG_PPPEN_Msk)) |
+                   ((2 - 1) << USIC_CH_BRG_DCTQ_Pos) |
+                   ((8 - 1) << USIC_CH_BRG_PDIV_Pos);
+}
 
 void spitfp_master_init_spi(void) {
 	// USIC channel configuration
@@ -450,6 +454,7 @@ void spitfp_master_check_message(void) {
 				ringbuffer_remove(&spitfp_master.ringbuffer_recv, num_to_remove_from_ringbuffer);
 				num_to_remove_from_ringbuffer = 0;
 
+
 				if(checksum != data) {
 					spitfp_master.error_count_message_checksum++;
 					spitfp_master_handle_protocol_error();
@@ -536,18 +541,18 @@ uint16_t spitfp_master_check_missing_length() {
 
 void spitfp_master_poll_spi_recv_fifo(void) {
 	// Turn the RX fifo interrupt off, to be sure that we can't get an interrupt while we are polling here
+	__disable_irq();
 	XMC_USIC_CH_RXFIFO_DisableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_RXFIFO_EVENT_CONF_STANDARD | XMC_USIC_CH_RXFIFO_EVENT_CONF_ALTERNATE);
 	while(!XMC_USIC_CH_RXFIFO_IsEmpty(SPITFP_MASTER_USIC)) {
 		spitfp_master.buffer_recv[spitfp_master.ringbuffer_recv.end] = SPITFP_MASTER_USIC->OUTR;
 		spitfp_master.ringbuffer_recv.end = (spitfp_master.ringbuffer_recv.end + 1) & SPITFP_MASTER_BUFFER_MASK;
 	}
+	XMC_USIC_CH_RXFIFO_ClearEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_RXFIFO_EVENT_CONF_STANDARD | XMC_USIC_CH_RXFIFO_EVENT_CONF_ALTERNATE);
 	XMC_USIC_CH_RXFIFO_EnableEvent(SPITFP_MASTER_USIC, XMC_USIC_CH_RXFIFO_EVENT_CONF_STANDARD | XMC_USIC_CH_RXFIFO_EVENT_CONF_ALTERNATE);
+	__enable_irq();
 }
 
 void spitfp_master_update_baudrate(void) {
-	// TODO: This currently uses a max baudrate of 1400000.
-	//       It does not seem to work well with 2000000 baud. Why?
-	//       !!! Check this before we order for production !!!
 	if(system_timer_is_time_elapsed_ms(spitfp_master.update_speed_time, 100)) {
 		spitfp_master.update_speed_time = system_timer_get_ms();
 		const uint32_t counter = spitfp_master.data_counter;
@@ -561,9 +566,9 @@ void spitfp_master_update_baudrate(void) {
 			if(counter <= 800) {
 				new_baudrate = spitfp_master.minimum_dynamic_baudrate;
 			} else if(counter >= 2000) {
-				new_baudrate = 1400000;
+				new_baudrate = 2000000;
 			} else {
-				new_baudrate = SCALE(counter, 800, 2000, spitfp_master.minimum_dynamic_baudrate, 1400000);
+				new_baudrate = SCALE(counter, 800, 2000, spitfp_master.minimum_dynamic_baudrate, 2000000);
 			}
 
 			if(new_baudrate >= spitfp_master.baudrate_current) {
@@ -574,11 +579,16 @@ void spitfp_master_update_baudrate(void) {
 			}
 
 			if(old_baudrate != spitfp_master.baudrate_current) {
-				uartbb_printf("%d\n\r", spitfp_master.baudrate_current);
-				XMC_USIC_CH_SetBaudrate(SPITFP_MASTER_USIC, spitfp_master.baudrate_current, 2);
+				spitfp_master_set_baudrate(MIN(spitfp_master.baudrate, spitfp_master.baudrate_current));
 			}
 		} else {
-			spitfp_master.baudrate_current = 1400000;
+			spitfp_master.baudrate_current = 2000000;
+			if(spitfp_master.baudrate_new) {
+				spitfp_master.baudrate_new = false;
+				XMC_SPI_CH_Stop(SPITFP_MASTER_USIC);
+				spitfp_master_set_baudrate(spitfp_master.baudrate);
+				XMC_SPI_CH_Start(SPITFP_MASTER_USIC);
+			}
 		}
 	}
 }

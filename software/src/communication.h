@@ -55,11 +55,11 @@ bool communication_handle_message_from_bricklet(uint8_t *message, const uint8_t 
 
 // Function and callback IDs and structs
 #define FID_GET_STATISTICS 1
-#define FID_SET_SPITFP_BAUDRATE_CONFIG 231
-#define FID_GET_SPITFP_BAUDRATE_CONFIG 232
-#define FID_SET_SPITFP_BAUDRATE 234
-#define FID_GET_SPITFP_BAUDRATE 235
-#define FID_GET_ISOLATOR_SPITFP_ERROR_COUNT 237
+#define FID_SET_SPITFP_BAUDRATE_CONFIG 2
+#define FID_GET_SPITFP_BAUDRATE_CONFIG 3
+#define FID_SET_SPITFP_BAUDRATE 4
+#define FID_GET_SPITFP_BAUDRATE 5
+#define FID_GET_ISOLATOR_SPITFP_ERROR_COUNT 6
 
 
 typedef struct {

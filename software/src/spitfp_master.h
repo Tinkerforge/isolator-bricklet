@@ -64,6 +64,7 @@ typedef struct {
 
 	uint32_t baudrate;
 	uint32_t baudrate_current;
+	bool baudrate_new;
 
 	uint32_t error_count_ack_checksum;
 	uint32_t error_count_message_checksum;

@@ -125,7 +125,7 @@ BootloaderHandleMessageResponse set_spitfp_baudrate_config(const SetSPITFPBaudra
 	spitfp_master.minimum_dynamic_baudrate = BETWEEN(400000, data->minimum_dynamic_baudrate, 2000000);
 
 	if(!spitfp_master.enable_dynamic_baudrate) {
-		XMC_USIC_CH_SetBaudrate(SPITFP_MASTER_USIC, spitfp_master.baudrate, 2);
+		spitfp_master.baudrate_new = true;
 	}
 
 	return HANDLE_MESSAGE_RESPONSE_EMPTY;
@@ -143,7 +143,7 @@ BootloaderHandleMessageResponse set_spitfp_baudrate(const SetSPITFPBaudrate *dat
 	spitfp_master.baudrate = BETWEEN(400000, data->baudrate, 2000000);
 
 	if(!spitfp_master.enable_dynamic_baudrate) {
-		XMC_USIC_CH_SetBaudrate(SPITFP_MASTER_USIC, spitfp_master.baudrate, 2);
+		spitfp_master.baudrate_new = true;
 	}
 
 	return HANDLE_MESSAGE_RESPONSE_EMPTY;
