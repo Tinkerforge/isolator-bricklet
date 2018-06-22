@@ -30,6 +30,7 @@
 #include "bricklib2/utility/pearson_hash.h"
 #include "bricklib2/utility/util_definitions.h"
 #include "bricklib2/hal/system_timer/system_timer.h"
+#include "bricklib2/hal/ccu4_timer/ccu4_timer.h"
 #include "bricklib2/protocols/spitfp/spitfp.h"
 
 #define spitfp_master_rx_irq_handler IRQ_Hdlr_11
@@ -202,6 +203,8 @@ void spitfp_master_init_spi(void) {
 
 	XMC_SPI_CH_DisableFEM(SPITFP_MASTER_USIC);
 	XMC_SPI_CH_EnableSlaveSelect(SPITFP_MASTER_USIC, XMC_SPI_CH_SLAVE_SELECT_0);
+
+	ccu4_timer_init(XMC_CCU4_SLICE_PRESCALER_64, 0xFFFF); // Prescaler 64 @32MHz CPU and CCU4=2xCPU to count in us
 }
 
 void spitfp_master_init(void) {
@@ -600,30 +603,53 @@ void spitfp_master_tick(void) {
 
 	spitfp_master_poll_spi_recv_fifo();
 	spitfp_master_check_message();
-
 	spitfp_master_poll_spi_recv_fifo();
-	const uint16_t missing_length = spitfp_master_check_missing_length();
-	spitfp_master.bytes_to_read = MAX(missing_length, spitfp_master.bytes_to_read);
 
-	if(spitfp_master_is_send_possible()) {
-		// If there is a message to be send from Brick to Bricklet we can send it now.
-		if(spitfp_master.buffer_message_from_brick_length > 0) {
-			spitfp_master_send_ack_and_message(spitfp_master.buffer_message_from_brick, spitfp_master.buffer_message_from_brick_length);
-			spitfp_master.buffer_message_from_brick_length = 0;
-			return;
-		// If there is an ack to be send, we can send it now.
-		} else if(spitfp_master.ack_to_send) {
-			spitfp_master_send_ack();
-			spitfp_master.ack_to_send = false;
-			return;
+	uint16_t missing_length = spitfp_master_check_missing_length();
+	for(uint8_t _ = 0; _ < 2; _++) { // We try to send data at most two times before we go back to the bootloader
+		spitfp_master.bytes_to_read = MAX(missing_length, spitfp_master.bytes_to_read);
+
+		if(spitfp_master_is_send_possible()) {
+			// If there is a message to be send from Brick to Bricklet we can send it now.
+			if(spitfp_master.buffer_message_from_brick_length > 0) {
+				spitfp_master_send_ack_and_message(spitfp_master.buffer_message_from_brick, spitfp_master.buffer_message_from_brick_length);
+				spitfp_master.buffer_message_from_brick_length = 0;
+				return;
+			// If there is an ack to be send, we can send it now.
+			} else if(spitfp_master.ack_to_send) {
+				spitfp_master_send_ack();
+				spitfp_master.ack_to_send = false;
+				return;
+			}
 		}
-	}
 
-	// If we can't send data or ack (see above) and the last time we polled the slave
-	// was over 1ms ago, we poll again.
-	if(system_timer_is_time_elapsed_ms(spitfp_master.last_poll, 1) || (spitfp_master.bytes_to_read > 0)) {
-		spitfp_master.last_poll = system_timer_get_ms();
-		spitfp_master.bytes_to_read = MAX(1, spitfp_master.bytes_to_read);
-		spitfp_master_trigger_send();
+		// If we can't send data or ack (see above) and the last time we polled the slave
+		// was over 1ms ago, we poll again.
+		if(ccu4_timer_is_time_elapsed_32bit(spitfp_master.last_poll, 200) || (spitfp_master.bytes_to_read > 0)) {
+			spitfp_master.last_poll = ccu4_timer_get_value_32bit();
+			spitfp_master.bytes_to_read = MAX(1, spitfp_master.bytes_to_read);
+			
+			bool check_again = false;
+			if(spitfp_master.bytes_to_read == 1) {
+				// If we only read one byte, we will check the content of the byte directly
+				check_again = true;
+			}
+
+			spitfp_master_trigger_send();
+			if(check_again) {
+				// Wait for single byte to be transferred
+				while(XMC_USIC_CH_RXFIFO_IsEmpty(SPITFP_MASTER_USIC));
+				// Check if there is a length in the datum in the byte
+				spitfp_master_poll_spi_recv_fifo();
+				missing_length = spitfp_master_check_missing_length();
+				if(missing_length > 0) {
+					// Go back to beginning and handle this lenght of data directly without going to the bootloader
+					continue;
+				}
+			}
+		}
+
+		// Normally we don't use the loop, only if we receive the length byte (see above)
+		break;
 	}
 }
