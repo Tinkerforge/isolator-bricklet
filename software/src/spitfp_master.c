@@ -607,7 +607,11 @@ void spitfp_master_tick(void) {
 
 	uint16_t missing_length = spitfp_master_check_missing_length();
 	for(uint8_t _ = 0; _ < 2; _++) { // We try to send data at most two times before we go back to the bootloader
-		spitfp_master.bytes_to_read = MAX(missing_length, spitfp_master.bytes_to_read);
+		// Updating the bytes to read with the missing lenght only makes sense if we are not currently already receiving data.
+		// To receive data we writy 0s in the TX buffer, so we can check if the TX buffer is empty here.
+		if(XMC_USIC_CH_TXFIFO_IsEmpty(SPITFP_MASTER_USIC)) {
+			spitfp_master.bytes_to_read = MAX(missing_length, spitfp_master.bytes_to_read);
+		}
 
 		if(spitfp_master_is_send_possible()) {
 			// If there is a message to be send from Brick to Bricklet we can send it now.
@@ -624,8 +628,10 @@ void spitfp_master_tick(void) {
 		}
 
 		// If we can't send data or ack (see above) and the last time we polled the slave
-		// was over 1ms ago, we poll again.
-		if(ccu4_timer_is_time_elapsed_32bit(spitfp_master.last_poll, 200) || (spitfp_master.bytes_to_read > 0)) {
+		// was over 200us ago, we poll again.
+		// But we only poll again if were are not currently sending/receiving data already 
+		// (happens if a transfer takes longer then the 200us).
+		if((ccu4_timer_is_time_elapsed_32bit(spitfp_master.last_poll, 200) || (spitfp_master.bytes_to_read > 0)) && XMC_USIC_CH_TXFIFO_IsEmpty(SPITFP_MASTER_USIC)) {
 			spitfp_master.last_poll = ccu4_timer_get_value_32bit();
 			spitfp_master.bytes_to_read = MAX(1, spitfp_master.bytes_to_read);
 			
