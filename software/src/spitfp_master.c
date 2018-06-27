@@ -56,7 +56,7 @@ void __attribute__((optimize("-O3"))) __attribute__((section (".ram_code"))) spi
 				}
 			}
 		} else {
-			// If we don't have any data to send, will will send zeroes to poll the slave.
+			// If we don't have any data to send, we will send zeroes to poll the slave.
 			// The amount of zeroes to be send is set by the state machine.
 			if(spitfp_master.bytes_to_read > 0) {
 				spitfp_master.bytes_to_read--;
