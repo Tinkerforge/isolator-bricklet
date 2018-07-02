@@ -45,7 +45,7 @@ void communication_inspect_message_from_bricklet_to_brick(void *message) {
 
 			// Insert correct position and connected UID into
 			// enumerate and identity messages
-			gir->position = 'I';
+			gir->position = 'Z';
 			memset(gir->connected_uid, '\0', TFP_UID_STR_MAX_LENGTH);
 			tfp_uid_uint32_to_base58(bootloader_get_uid(), gir->connected_uid);
 
