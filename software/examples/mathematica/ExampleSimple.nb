@@ -1,0 +1,38 @@
+Notebook[{
+ Cell[
+  BoxData[{
+   RowBox[{"Needs", "[", "\"\<NETLink`\>\"", "]"}],
+   RowBox[{"LoadNETAssembly", "[", RowBox[{"\"\<Tinkerforge\>\"", ",", RowBox[{RowBox[{"NotebookDirectory", "[", "]"}], "<>", "\"\<../../..\>\""}]}], "]"}]
+  }], "Input"
+ ],
+ Cell[
+  BoxData[{
+   RowBox[{"host", "=", "\"\<localhost\>\""}],
+   RowBox[{"port", "=", "4223"}],
+   RowBox[{"uid", "=", "\"\<XYZ\>\"", RowBox[{"(*", "Change XYZ to the UID of your Isolator Bricklet", "*)"}]}],
+   RowBox[{"
+"}],
+   RowBox[{"(*", "Create IPConnection and device object", "*)"}],
+   RowBox[{"ipcon", "=", RowBox[{"NETNew", "[", "\"\<Tinkerforge.IPConnection\>\"", "]"}]}],
+   RowBox[{"i", "=", RowBox[{"NETNew", "[", RowBox[{"\"\<Tinkerforge.BrickletIsolator\>\"", ",", "uid", ",", "ipcon"}], "]"}]}],
+   RowBox[{"ipcon", "@", RowBox[{"Connect", "[", RowBox[{"host", ",", "port"}], "]"}]}],
+   RowBox[{"
+"}],
+   RowBox[{"(*", "Get current statistics", "*)"}],
+   RowBox[{"messagesFromBrick", "=", "0", ";", "messagesFromBricklet", "=", "0", ";", "connectedBrickletDeviceIdentifier", "=", "0", ";", "connectedBrickletUID", "=", "0"}],
+   RowBox[{"i", "@", RowBox[{"GetStatistics", "[", RowBox[{"messagesFromBrick", ",", "messagesFromBricklet", ",", "connectedBrickletDeviceIdentifier", ",", "connectedBrickletUID"}], "]"}]}],
+   RowBox[{"
+"}],
+   RowBox[{"Print", "[", RowBox[{"\"\<Messages From Brick: \>\"", "<>", RowBox[{"ToString", "[", "messagesFromBrick", "]"}]}], "]"}],
+   RowBox[{"Print", "[", RowBox[{"\"\<Messages From Bricklet: \>\"", "<>", RowBox[{"ToString", "[", "messagesFromBricklet", "]"}]}], "]"}],
+   RowBox[{"Print", "[", RowBox[{"\"\<Connected Bricklet Device Identifier: \>\"", "<>", RowBox[{"ToString", "[", "connectedBrickletDeviceIdentifier", "]"}]}], "]"}],
+   RowBox[{"Print", "[", RowBox[{"\"\<Connected Bricklet UID: \>\"", "<>", "connectedBrickletUID"}], "]"}],
+   RowBox[{"
+"}],
+   RowBox[{"(*", "Clean up", "*)"}],
+   RowBox[{"ipcon", "@", RowBox[{"Disconnect", "[", "]"}]}],
+   RowBox[{"ReleaseNETObject", "[", "i", "]"}],
+   RowBox[{"ReleaseNETObject", "[", "ipcon", "]"}]
+  }], "Input"
+ ]
+}]
