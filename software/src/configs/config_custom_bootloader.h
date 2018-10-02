@@ -39,6 +39,8 @@
 
 #define BOOTLOADER_ISOLATOR
 
+#define BOOTLOADER_FIX_POINTER_END
+
 // --- SPITFP ---
 #define SPITFP_USIC_CHANNEL         USIC0_CH0
 #define SPITFP_USIC                 XMC_SPI0_CH0
