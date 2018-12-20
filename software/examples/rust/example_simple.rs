@@ -17,9 +17,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let statistics = i.get_statistics().recv()?;
 
     println!("Messages From Brick: {}", statistics.messages_from_brick);
-    println!("Messages From Bricklet: {}", statistics.messages_from_bricklet);
-    println!("Connected Bricklet Device Identifier: {}", statistics.connected_bricklet_device_identifier);
-    println!("Connected Bricklet UID: {}", statistics.connected_bricklet_uid);
+    println!(
+        "Messages From Bricklet: {}",
+        statistics.messages_from_bricklet
+    );
+    println!(
+        "Connected Bricklet Device Identifier: {}",
+        statistics.connected_bricklet_device_identifier
+    );
+    println!(
+        "Connected Bricklet UID: {}",
+        statistics.connected_bricklet_uid
+    );
 
     println!("Press enter to exit.");
     let mut _input = String::new();
