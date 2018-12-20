@@ -14,12 +14,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                                           // Don't use device before ipcon is connected.
 
     // Get current statistics.
-    let get_statistics_result = i.get_statistics().recv()?;
+    let statistics = i.get_statistics().recv()?;
 
-    println!("Messages From Brick: {}", get_statistics_result.messages_from_brick);
-    println!("Messages From Bricklet: {}", get_statistics_result.messages_from_bricklet);
-    println!("Connected Bricklet Device Identifier: {}", get_statistics_result.connected_bricklet_device_identifier);
-    println!("Connected Bricklet UID: {}", get_statistics_result.connected_bricklet_uid);
+    println!("Messages From Brick: {}", statistics.messages_from_brick);
+    println!("Messages From Bricklet: {}", statistics.messages_from_bricklet);
+    println!("Connected Bricklet Device Identifier: {}", statistics.connected_bricklet_device_identifier);
+    println!("Connected Bricklet UID: {}", statistics.connected_bricklet_uid);
 
     println!("Press enter to exit.");
     let mut _input = String::new();
