@@ -1,0 +1,8 @@
+
+
+# Change XYZ to the UID of your Isolator Bricklet
+
+setup:
+	# Get current statistics
+	subscribe to tinkerforge/response/isolator/XYZ/get_statistics
+	publish '' to tinkerforge/request/isolator_bricklet/XYZ/get_statistics 
