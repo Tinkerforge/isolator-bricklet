@@ -2,5 +2,5 @@
 
 setup:
 	# Get current statistics
-	subscribe to tinkerforge/response/isolator/XYZ/get_statistics
+	subscribe to tinkerforge/response/isolator_bricklet/XYZ/get_statistics
 	publish '' to tinkerforge/request/isolator_bricklet/XYZ/get_statistics 
