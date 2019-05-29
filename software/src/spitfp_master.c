@@ -312,8 +312,7 @@ void spitfp_master_check_message_send_timeout(void) {
 
 void spitfp_master_handle_protocol_error(void) {
 	// In case of error we completely empty the ringbuffer
-	uint8_t data;
-	while(ringbuffer_get(&spitfp_master.ringbuffer_recv, &data));
+	spitfp_master.ringbuffer_recv.start = spitfp_master.ringbuffer_recv.end;
 }
 
 void spitfp_master_check_message(void) {
