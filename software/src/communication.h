@@ -1,5 +1,5 @@
 /* isolator-bricklet
- * Copyright (C) 2018 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2018-2019 Olaf Lüke <olaf@tinkerforge.com>
  *
  * communication.h: TFP protocol message handling
  *
@@ -32,9 +32,9 @@
 BootloaderHandleMessageResponse handle_message(const void *data, void *response);
 void communication_tick(void);
 void communication_init(void);
-bool communication_handle_message_from_bricklet(uint8_t *message, const uint8_t length);
 
 // Constants
+
 #define ISOLATOR_BOOTLOADER_MODE_BOOTLOADER 0
 #define ISOLATOR_BOOTLOADER_MODE_FIRMWARE 1
 #define ISOLATOR_BOOTLOADER_MODE_BOOTLOADER_WAIT_FOR_REBOOT 2
@@ -60,7 +60,10 @@ bool communication_handle_message_from_bricklet(uint8_t *message, const uint8_t 
 #define FID_SET_SPITFP_BAUDRATE 4
 #define FID_GET_SPITFP_BAUDRATE 5
 #define FID_GET_ISOLATOR_SPITFP_ERROR_COUNT 6
+#define FID_SET_STATISTICS_CALLBACK_CONFIGURATION 7
+#define FID_GET_STATISTICS_CALLBACK_CONFIGURATION 8
 
+#define FID_CALLBACK_STATISTICS 9
 
 typedef struct {
 	TFPMessageHeader header;
@@ -116,6 +119,29 @@ typedef struct {
 	uint32_t error_count_overflow;
 } __attribute__((__packed__)) GetIsolatorSPITFPErrorCount_Response;
 
+typedef struct {
+	TFPMessageHeader header;
+	uint32_t period;
+	bool value_has_to_change;
+} __attribute__((__packed__)) SetStatisticsCallbackConfiguration;
+
+typedef struct {
+	TFPMessageHeader header;
+} __attribute__((__packed__)) GetStatisticsCallbackConfiguration;
+
+typedef struct {
+	TFPMessageHeader header;
+	uint32_t period;
+	bool value_has_to_change;
+} __attribute__((__packed__)) GetStatisticsCallbackConfiguration_Response;
+
+typedef struct {
+	TFPMessageHeader header;
+	uint32_t messages_from_brick;
+	uint32_t messages_from_bricklet;
+	uint16_t connected_bricklet_device_identifier;
+	char connected_bricklet_uid[8];
+} __attribute__((__packed__)) Statistics_Callback;
 
 
 // Function prototypes
@@ -125,13 +151,16 @@ BootloaderHandleMessageResponse get_spitfp_baudrate_config(const GetSPITFPBaudra
 BootloaderHandleMessageResponse set_spitfp_baudrate(const SetSPITFPBaudrate *data);
 BootloaderHandleMessageResponse get_spitfp_baudrate(const GetSPITFPBaudrate *data, GetSPITFPBaudrate_Response *response);
 BootloaderHandleMessageResponse get_isolator_spitfp_error_count(const GetIsolatorSPITFPErrorCount *data, GetIsolatorSPITFPErrorCount_Response *response);
-
+BootloaderHandleMessageResponse set_statistics_callback_configuration(const SetStatisticsCallbackConfiguration *data);
+BootloaderHandleMessageResponse get_statistics_callback_configuration(const GetStatisticsCallbackConfiguration *data, GetStatisticsCallbackConfiguration_Response *response);
 
 // Callbacks
-
+bool handle_statistics_callback(void);
 
 #define COMMUNICATION_CALLBACK_TICK_WAIT_MS 1
-#define COMMUNICATION_CALLBACK_HANDLER_NUM 0
+#define COMMUNICATION_CALLBACK_HANDLER_NUM 1
 #define COMMUNICATION_CALLBACK_LIST_INIT \
+	handle_statistics_callback, \
+
 
 #endif

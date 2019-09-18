@@ -1,5 +1,5 @@
 /* isolator-bricklet
- * Copyright (C) 2018 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2018-2019 Olaf Lüke <olaf@tinkerforge.com>
  *
  * communication.c: TFP protocol message handling
  *
@@ -26,6 +26,7 @@
 #include "bricklib2/utility/communication_callback.h"
 #include "bricklib2/utility/util_definitions.h"
 #include "bricklib2/protocols/tfp/tfp.h"
+#include "bricklib2/hal/system_timer/system_timer.h"
 
 #include "spitfp_master.h"
 #include "configs/config_spitfp_master.h"
@@ -67,6 +68,8 @@ BootloaderHandleMessageResponse handle_message(const void *message, void *respon
 			case FID_SET_SPITFP_BAUDRATE: return set_spitfp_baudrate(message);
 			case FID_GET_SPITFP_BAUDRATE: return get_spitfp_baudrate(message, response);
 			case FID_GET_ISOLATOR_SPITFP_ERROR_COUNT: return get_isolator_spitfp_error_count(message, response);
+			case FID_SET_STATISTICS_CALLBACK_CONFIGURATION: return set_statistics_callback_configuration(message);
+			case FID_GET_STATISTICS_CALLBACK_CONFIGURATION: return get_statistics_callback_configuration(message, response);
 			default: return HANDLE_MESSAGE_RESPONSE_NOT_SUPPORTED;
 		}
 	}
@@ -167,8 +170,71 @@ BootloaderHandleMessageResponse get_isolator_spitfp_error_count(const GetIsolato
 }
 
 
+BootloaderHandleMessageResponse set_statistics_callback_configuration(const SetStatisticsCallbackConfiguration *data) {
+	spitfp_master.period              = data->period;
+	spitfp_master.value_has_to_change = data->value_has_to_change;
+
+	return HANDLE_MESSAGE_RESPONSE_EMPTY;
+}
+
+BootloaderHandleMessageResponse get_statistics_callback_configuration(const GetStatisticsCallbackConfiguration *data, GetStatisticsCallbackConfiguration_Response *response) {
+	response->header.length       = sizeof(GetStatisticsCallbackConfiguration_Response);
+	response->period              = spitfp_master.period;
+	response->value_has_to_change = spitfp_master.value_has_to_change;
+
+	return HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE;
+}
+
+
+bool handle_statistics_callback(void) {
+	static bool is_buffered = false;
+	static Statistics_Callback cb;
+
+	static uint32_t last_time = 0;
+	static uint32_t last_messages_from_brick;
+	static uint32_t last_messages_from_bricklet;
+	static uint16_t last_connected_bricklet_device_identifier;
+
+	if(!is_buffered) {
+		if(spitfp_master.period == 0 || !system_timer_is_time_elapsed_ms(last_time, spitfp_master.period)) {
+			return false;
+		}
+
+		// We ignore UID here, since we don't support hotplug anyway
+		if(spitfp_master.messages_from_brick == last_messages_from_brick &&
+		   spitfp_master.messages_from_bricklet == last_messages_from_bricklet &&
+		   spitfp_master.connected_bricklet_device_identifier == last_connected_bricklet_device_identifier) {
+			return false;
+		}
+
+		tfp_make_default_header(&cb.header, bootloader_get_uid(), sizeof(Statistics_Callback), FID_CALLBACK_STATISTICS);
+		cb.messages_from_brick                  = spitfp_master.messages_from_brick;
+		cb.messages_from_bricklet               = spitfp_master.messages_from_bricklet;
+		cb.connected_bricklet_device_identifier = spitfp_master.connected_bricklet_device_identifier;
+		memcpy(cb.connected_bricklet_uid, spitfp_master.connected_bricklet_uid, 8);
+
+		last_messages_from_brick                  = cb.messages_from_brick;
+		last_messages_from_bricklet               = cb.messages_from_bricklet;
+		last_connected_bricklet_device_identifier = cb.connected_bricklet_device_identifier;
+
+		last_time = system_timer_get_ms();
+	}
+
+	if(bootloader_spitfp_is_send_possible(&bootloader_status.st)) {
+		bootloader_spitfp_send_ack_and_message(&bootloader_status, (uint8_t*)&cb, sizeof(Statistics_Callback));
+		is_buffered = false;
+		return true;
+	} else {
+		is_buffered = true;
+	}
+
+	return false;
+}
+
 void communication_tick(void) {
+	communication_callback_tick();
 }
 
 void communication_init(void) {
+	communication_callback_init();
 }

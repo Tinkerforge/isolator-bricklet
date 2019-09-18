@@ -73,6 +73,9 @@ typedef struct {
 
 	uint32_t update_speed_time;
 	uint32_t data_counter;
+
+	uint32_t period;
+	bool value_has_to_change;
 } SPITFPMaster;
 
 extern SPITFPMaster spitfp_master;
