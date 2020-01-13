@@ -24,5 +24,5 @@ if __name__ == "__main__":
     print("Connected Bricklet Device Identifier: " + str(connected_bricklet_device_identifier))
     print("Connected Bricklet UID: " + connected_bricklet_uid)
 
-    raw_input("Press key to exit\n") # Use input() in Python 3
+    input("Press key to exit\n") # Use raw_input() in Python 2
     ipcon.disconnect()
