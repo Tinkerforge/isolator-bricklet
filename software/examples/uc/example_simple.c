@@ -22,9 +22,9 @@ void example_setup(TF_HalContext *hal) {
 	                                 &connected_bricklet_device_identifier,
 	                                 connected_bricklet_uid), "get statistics");
 
-	tf_hal_printf("Messages From Brick: %u\n", messages_from_brick);
-	tf_hal_printf("Messages From Bricklet: %u\n", messages_from_bricklet);
-	tf_hal_printf("Connected Bricklet Device Identifier: %u\n", connected_bricklet_device_identifier);
+	tf_hal_printf("Messages From Brick: %I32u\n", messages_from_brick);
+	tf_hal_printf("Messages From Bricklet: %I32u\n", messages_from_bricklet);
+	tf_hal_printf("Connected Bricklet Device Identifier: %I16u\n", connected_bricklet_device_identifier);
 	tf_hal_printf("Connected Bricklet UID: %s\n", connected_bricklet_uid);
 }
 
