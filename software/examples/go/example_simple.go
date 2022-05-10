@@ -21,10 +21,10 @@ func main() {
 	// Get current statistics.
 	messagesFromBrick, messagesFromBricklet, connectedBrickletDeviceIdentifier, connectedBrickletUID, _ := i.GetStatistics()
 
-	fmt.Printf("Messages From Brick: \n", messagesFromBrick)
-	fmt.Printf("Messages From Bricklet: \n", messagesFromBricklet)
-	fmt.Printf("Connected Bricklet Device Identifier: \n", connectedBrickletDeviceIdentifier)
-	fmt.Printf("Connected Bricklet UID: \n", connectedBrickletUID)
+	fmt.Printf("Messages From Brick: %d\n", messagesFromBrick)
+	fmt.Printf("Messages From Bricklet: %d\n", messagesFromBricklet)
+	fmt.Printf("Connected Bricklet Device Identifier: %d\n", connectedBrickletDeviceIdentifier)
+	fmt.Printf("Connected Bricklet UID: %s\n", connectedBrickletUID)
 
 	fmt.Print("Press enter to exit.")
 	fmt.Scanln()
